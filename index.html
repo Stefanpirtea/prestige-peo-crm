@@ -595,8 +595,12 @@ html, body {
     <button class="btn btn-neon" onclick="openAdd()">+ Add Lead</button>
     <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
     <button class="btn btn-ghost btn-sm" onclick="openImport()">↑ Import</button>
-    <button class="btn btn-neon" onclick="sendBatchToGmailDrafts()" title="Selects the next 25 untouched leads and creates Gmail drafts directly">📤 Send Batch to Gmail Drafts</button>
-    <button class="btn btn-ghost btn-sm" onclick="nextBatchToClaude()" title="Selects the next 25 untouched leads and opens the copy block for Claude" style="font-size:12px;opacity:.8">📋 Manual → Claude</button>
+    <span style="display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border:1px solid var(--border);border-radius:7px;padding:3px 8px 3px 10px">
+      <label for="batch-size-input" style="font-size:11px;color:var(--text3);white-space:nowrap;font-weight:600;letter-spacing:.04em">BATCH</label>
+      <input id="batch-size-input" type="number" min="1" max="500" value="25" style="width:52px;background:var(--surf3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-size:13px;font-weight:700;padding:2px 6px;text-align:center;outline:none" title="Number of leads per batch">
+    </span>
+    <button class="btn btn-neon" onclick="sendBatchToGmailDrafts()" title="Selects the next N untouched leads and creates Gmail drafts directly">📤 Send Batch to Gmail Drafts</button>
+    <button class="btn btn-ghost btn-sm" onclick="nextBatchToClaude()" title="Selects the next N untouched leads and opens the copy block for Claude" style="font-size:12px;opacity:.8">📋 Manual → Claude</button>
     <button class="btn btn-green btn-sm" onclick="openMarkSentModal()" title="Paste the batch block Claude used to create drafts — CRM marks all those leads as Email sent automatically">✅ Mark Batch Sent</button>
     <button class="btn btn-ghost btn-sm" onclick="openScanModal()">📧 Scan Replies</button>
     <button class="btn btn-danger btn-sm" onclick="clearAll()">⚠ Clear All</button>
@@ -1813,11 +1817,18 @@ function selectNext25() {
 }
 
 // One-click: select next 25 + open batch export immediately
+function getBatchSize() {
+  const el = document.getElementById('batch-size-input');
+  const v = el ? parseInt(el.value, 10) : 25;
+  return (isNaN(v) || v < 1) ? 25 : v;
+}
+
 function nextBatchToClaude() {
   selected.clear();
   let count = 0;
+  const batchSize = getBatchSize();
   for (let i = 0; i < leads.length; i++) {
-    if (count >= 25) break;
+    if (count >= batchSize) break;
     if (!leads[i].status || leads[i].status === 'Not contacted') {
       selected.add(i);
       count++;
@@ -2222,11 +2233,12 @@ async function sendBatchToGmailDrafts() {
     return;
   }
 
-  // Select next 25 "Not contacted" leads
+  // Select next N "Not contacted" leads
   selected.clear();
   let count = 0;
+  const batchSize = getBatchSize();
   for (let i = 0; i < leads.length; i++) {
-    if (count >= 25) break;
+    if (count >= batchSize) break;
     if (!leads[i].status || leads[i].status === 'Not contacted') {
       selected.add(i);
       count++;
