@@ -574,6 +574,8 @@ html, body {
   </div>
   <button id="gmail-connect-btn" class="btn btn-gmail btn-sm disconnected" onclick="handleGmailBtn()" title="Connect to Gmail to create drafts directly">🔗 Connect Gmail</button>
   <span id="gmail-dot" class="gmail-dot off">○ Not connected</span>
+  <button id="sheets-connect-btn" class="btn btn-gmail btn-sm disconnected" onclick="connectSheets()" title="Connect Google Sheets as live database" style="border-color:rgba(0,200,255,.3);font-size:12px">📊 Connect Sheets</button>
+  <span id="sheets-dot" class="gmail-dot off">○ Sheet offline</span>
   <div id="save-pill" class="save-pill empty">No data</div>
 </nav>
 
@@ -738,6 +740,52 @@ html, body {
       </div></div>
     </div>
   </div>
+  <!-- ── Google Sheets Backend Card ── -->
+  <div class="card" style="border-color:rgba(0,200,255,.35)">
+    <div class="card-title" style="color:var(--accent);text-shadow:0 0 10px var(--accent-glow)">📊 Google Sheets Backend — Live Database</div>
+    <p class="hint" style="margin-bottom:1.25rem">Connect a Google Sheet as your live CRM database. All leads sync in real-time across any device. Uses the same OAuth Client ID from the Gmail setup below.</p>
+
+    <div style="margin-bottom:1rem">
+      <label class="flabel">Google Sheet ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(leave blank to auto-create a new sheet)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="finp" id="sheet-id-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" type="text" style="flex:1">
+        <button class="btn btn-ghost btn-sm" onclick="saveSheetIdFromInput()">Save ID</button>
+      </div>
+      <p class="hint" style="margin-top:6px">Find the ID in your Sheet URL: <code style="color:var(--accent);font-size:11px">docs.google.com/spreadsheets/d/<strong style="color:var(--green)">ID_IS_HERE</strong>/edit</code></p>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem">
+      <button class="btn btn-neon btn-sm" onclick="connectSheets()">📊 Connect Google Sheets</button>
+      <button class="btn btn-danger btn-sm" onclick="disconnectSheets()" id="sheets-disconnect-btn" style="display:none">✕ Disconnect</button>
+      <span id="sheets-setup-status" style="font-size:12px;color:var(--text3)">Not connected</span>
+    </div>
+
+    <hr class="section-divider">
+    <div class="section-heading">How it works</div>
+    <div class="steps">
+      <div class="step"><div>
+        <div class="step-title">Reuses your existing OAuth Client ID</div>
+        <div class="hint">Enter your Client ID below, click Save, then click Connect Google Sheets above. A separate Google sign-in will request the Sheets API scope.</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Sheet auto-creates on first connect</div>
+        <div class="hint">Leave Sheet ID blank — a new <strong>"Prestige PEO — Outreach CRM"</strong> spreadsheet is created in your Drive with formatted headers, frozen row, alternating colors, and color-coded status column.</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Existing leads push up automatically</div>
+        <div class="hint">On first connect, if your Sheet is empty but the CRM has local data, everything is pushed up to the Sheet. From then on, all edits sync in real-time.</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Reconnect each browser session</div>
+        <div class="hint">Your OAuth token isn't stored permanently for security. Click Connect Sheets once per session. Your Sheet ID is always remembered.</div>
+      </div></div>
+    </div>
+
+    <div style="background:rgba(0,200,255,.07);border:1px solid rgba(0,200,255,.2);border-radius:8px;padding:10px 14px;margin-top:8px">
+      <p class="hint"><strong style="color:var(--accent)">📌 Enable the Sheets API:</strong> In Google Cloud Console → APIs &amp; Services → Library → search "Google Sheets API" → Enable. Use the same project as your Gmail API.</p>
+    </div>
+  </div>
+
   <!-- Gmail OAuth Setup Card -->
   <div class="card" style="border-color:rgba(0,229,160,.25)">
     <div class="card-title" style="color:var(--green);text-shadow:0 0 10px rgba(0,229,160,.3)">🔗 Gmail Direct Integration — OAuth Setup</div>
@@ -789,11 +837,54 @@ html, body {
   </div>
 
   <div class="card">
-    <div class="card-title" style="margin-bottom:.5rem">Auto-save status</div>
-    <p class="hint" style="margin-bottom:1rem">All lead data and batch history is stored in your browser's localStorage. This is tied to this specific browser on this computer. To back up or move data, use Export CSV.</p>
+    <div class="card-title" style="margin-bottom:.5rem">💾 Data storage &amp; backup</div>
+    <p class="hint" style="margin-bottom:1rem">Leads are stored in your browser's localStorage as a fast local cache, and synced to Google Sheets when connected. Export CSV anytime as a backup or to move data.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV backup</button>
       <button class="btn btn-ghost btn-sm" onclick="openImport()">↑ Restore from CSV</button>
+    </div>
+  </div>
+
+  <!-- Claude API Card -->
+  <div class="card" style="border-color:rgba(167,139,250,.3)">
+    <div class="card-title" style="color:var(--purple);text-shadow:0 0 10px rgba(167,139,250,.3)">🤖 Claude API Key — for Reply_Scanner.gs</div>
+    <p class="hint" style="margin-bottom:1.25rem">The <strong>Reply_Scanner.gs</strong> Apps Script uses the Claude API to automatically classify incoming email replies. You need a Claude API key and to paste it into the script.</p>
+    <div class="steps">
+      <div class="step"><div>
+        <div class="step-title">Get your Claude API key</div>
+        <div class="hint">Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> → API Keys → Create Key. Copy the key (it starts with <code style="color:var(--purple);font-size:11px">sk-ant-</code>).</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Open Reply_Scanner.gs in Apps Script</div>
+        <div class="hint">In your Google Sheet → Extensions → Apps Script. Open the <strong>Reply_Scanner.gs</strong> file (or paste its contents into a new file named that).</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Paste the key at the top of the script</div>
+        <div class="hint">Find the line: <code style="color:var(--purple);font-size:11px">const CLAUDE_API_KEY = 'YOUR_CLAUDE_API_KEY_HERE';</code> — replace the placeholder with your actual key. Also paste your Sheet ID into <code style="color:var(--purple);font-size:11px">SHEET_ID</code>.</div>
+      </div></div>
+      <div class="step"><div>
+        <div class="step-title">Run setupTrigger() once to activate</div>
+        <div class="hint">In the Apps Script editor, select the <strong>setupTrigger</strong> function from the dropdown and click Run. This sets the scanner to run automatically every 30 minutes.</div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- Reply Scanner Card -->
+  <div class="card" style="border-color:rgba(0,229,160,.25)">
+    <div class="card-title" style="color:var(--green);text-shadow:0 0 10px rgba(0,229,160,.3)">⚡ Reply_Scanner.gs — Automated Reply Processing</div>
+    <p class="hint" style="margin-bottom:1.25rem">The Reply Scanner runs every 30 minutes in Apps Script, scans Gmail for replies to your outreach, classifies them with Claude, and updates your Sheet automatically.</p>
+    <table class="stbl">
+      <thead><tr><th>What it does</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--text)">Scans Gmail inbox</td><td>Searches for replies sent to <code style="font-size:11px;color:var(--accent)">spirtea@benpeo.com</code> in the last 48 hours</td></tr>
+        <tr><td style="color:var(--text)">Classifies with Claude</td><td>Uses <code style="font-size:11px;color:var(--accent)">claude-haiku-4-5-20251001</code> to classify each reply into one of 5 statuses</td></tr>
+        <tr><td style="color:var(--text)">Updates the Sheet</td><td>Sets Status, Last Action Date, and appends a note with the reply excerpt</td></tr>
+        <tr><td style="color:var(--text)">Logs everything</td><td>Appends a "Reply Received" entry to your PEO Drip Log sheet</td></tr>
+        <tr><td style="color:var(--text)">Never double-processes</td><td>Tracks processed Gmail message IDs in a dedicated sheet tab</td></tr>
+      </tbody>
+    </table>
+    <div style="background:var(--amber-bg);border:1px solid rgba(255,197,61,.25);border-radius:8px;padding:10px 14px;margin-top:12px">
+      <p class="hint"><strong style="color:var(--amber)">⚠ Required Gmail permission:</strong> The Apps Script needs Gmail read access (<code style="font-size:11px;color:var(--amber)">GmailApp.search</code>). On first run, Google will ask you to authorize it — click Allow.</p>
     </div>
   </div>
 </div>
@@ -1160,6 +1251,319 @@ let sortCol = '', sortDir = 1, curTpl = 'owner';
 let selected = new Set();
 
 // ════════════════════════════════════════════════
+// GOOGLE SHEETS BACKEND
+// ════════════════════════════════════════════════
+const LS_SHEET_ID   = 'peo_crm_sheet_id_v1';
+const SHEETS_API    = 'https://sheets.googleapis.com/v4/spreadsheets';
+const SHEET_TAB     = 'Leads';
+
+// Column field mapping (order matters — matches the Sheet columns)
+const SHEET_FIELDS = [
+  'fname','lname','company','title','industry','emp',
+  'mobile1','email','peo','status','date','followup',
+  'notes','tpl','batch',
+  'mobile2','workphone','ext','li','compli',
+  'city','state','zip','hq','revenue','companyurl',
+  'addr1','addr2','locality','verified','exported'
+];
+const SHEET_HEADERS = [
+  'First Name','Last Name','Company','Title','Industry','Employees',
+  'Phone','Email','Current PEO','Status','Last Action Date','Follow-up Date',
+  'Notes','Template','Batch #',
+  'Mobile 2','Work Phone','Ext','LinkedIn','Company LinkedIn',
+  'City','State','Zip','HQ','Revenue','Company URL',
+  'Address 1','Address 2','Locality','Date Verified','Date Exported'
+];
+const LAST_COL = 'AE'; // col 31
+
+let sheetsToken  = null;
+let sheetId      = '';
+let syncDebounce = null;
+
+// ── Sheets API wrappers ───────────────────────────────────
+async function sheetsReq(method, path, body) {
+  const url  = `${SHEETS_API}/${sheetId}${path}`;
+  const opts = { method, headers: { Authorization: `Bearer ${sheetsToken}` } };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw new Error(`Sheets ${method} ${path}: ${r.status} — ${t.slice(0,150)}`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+// ── Row ↔ Lead conversion ─────────────────────────────────
+function leadToRow(lead) {
+  return SHEET_FIELDS.map(f => (lead[f] !== undefined && lead[f] !== null) ? String(lead[f]) : '');
+}
+function rowToLead(row, rowIdx) {
+  const lead = { _row: rowIdx };
+  SHEET_FIELDS.forEach((f, i) => { lead[f] = row[i] !== undefined ? row[i] : ''; });
+  return lead;
+}
+
+// ── Sheet ID management ───────────────────────────────────
+function saveSheetId(id) {
+  sheetId = (id || '').trim();
+  localStorage.setItem(LS_SHEET_ID, sheetId);
+  const el = document.getElementById('sheet-id-input');
+  if (el) el.value = sheetId;
+}
+function saveSheetIdFromInput() {
+  const el = document.getElementById('sheet-id-input');
+  if (!el || !el.value.trim()) { alert('Paste your Sheet ID first.'); return; }
+  saveSheetId(el.value.trim());
+  const st = document.getElementById('sheets-setup-status');
+  if (st) { st.textContent = '✓ Sheet ID saved'; st.style.color = 'var(--green)';
+    setTimeout(() => updateSheetsUI(!!sheetsToken), 2500); }
+}
+
+// ── Create & format brand-new Sheet ──────────────────────
+async function createAndFormatSheet() {
+  updateSavePill('syncing');
+  // Create spreadsheet
+  const r = await fetch(SHEETS_API, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${sheetsToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      properties: { title: 'Prestige PEO — Outreach CRM' },
+      sheets: [{ properties: { title: SHEET_TAB, gridProperties: { frozenRowCount: 1 } } }]
+    })
+  });
+  if (!r.ok) throw new Error('Failed to create Sheet: ' + r.status);
+  const data = await r.json();
+  saveSheetId(data.spreadsheetId);
+
+  // Write headers
+  await sheetsReq('PUT',
+    `/values/${SHEET_TAB}!A1:${LAST_COL}1?valueInputOption=RAW`,
+    { values: [SHEET_HEADERS] }
+  );
+
+  // Get numeric sheet ID for batchUpdate
+  const meta  = await sheetsReq('GET', '');
+  const tabId = meta.sheets.find(s => s.properties.title === SHEET_TAB)?.properties.sheetId ?? 0;
+
+  const STATUS_COLORS = {
+    'Not contacted':             { red:0.60, green:0.60, blue:0.60 },
+    'Email sent':                { red:0.20, green:0.60, blue:0.86 },
+    'Replied \u2014 interested': { red:0.18, green:0.80, blue:0.44 },
+    'Replied \u2014 not interested': { red:0.90, green:0.30, blue:0.30 },
+    'Meeting booked':            { red:0.65, green:0.55, blue:0.98 },
+    'Followed up':               { red:0.98, green:0.77, blue:0.24 }
+  };
+  const condRules = Object.entries(STATUS_COLORS).map(([status, color]) => ({
+    addConditionalFormatRule: {
+      rule: {
+        ranges: [{ sheetId: tabId, startRowIndex: 1, startColumnIndex: 9, endColumnIndex: 10 }],
+        booleanRule: {
+          condition: { type: 'TEXT_EQ', values: [{ userEnteredValue: status }] },
+          format: { backgroundColor: color, textFormat: { bold: true, foregroundColor: { red:1, green:1, blue:1 } } }
+        }
+      },
+      index: 0
+    }
+  }));
+
+  const requests = [
+    // Frozen header row with navy bg + bold white text
+    {
+      repeatCell: {
+        range: { sheetId: tabId, startRowIndex: 0, endRowIndex: 1 },
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red:0.102, green:0.157, blue:0.251 },
+            textFormat: { bold: true, foregroundColor: { red:1, green:1, blue:1 }, fontSize: 10 },
+            verticalAlignment: 'MIDDLE', horizontalAlignment: 'LEFT',
+            padding: { top:8, bottom:8, left:10, right:10 }
+          }
+        },
+        fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment,horizontalAlignment,padding)'
+      }
+    },
+    // Freeze header
+    {
+      updateSheetProperties: {
+        properties: { sheetId: tabId, gridProperties: { frozenRowCount: 1 } },
+        fields: 'gridProperties.frozenRowCount'
+      }
+    },
+    // Alternating row banding (light blue / white)
+    {
+      addBanding: {
+        bandedRange: {
+          range: { sheetId: tabId, startRowIndex: 1, startColumnIndex: 0, endColumnIndex: SHEET_HEADERS.length },
+          rowProperties: {
+            headerColor: { red:0.102, green:0.157, blue:0.251 },
+            firstBandColor:  { red:0.933, green:0.961, blue:0.996 },
+            secondBandColor: { red:1.0,   green:1.0,   blue:1.0   }
+          }
+        }
+      }
+    },
+    // Auto-resize first 15 (display) columns
+    {
+      autoResizeDimensions: {
+        dimensions: { sheetId: tabId, dimension: 'COLUMNS', startIndex: 0, endIndex: 15 }
+      }
+    },
+    // Make extra (data-only) columns narrower
+    {
+      updateDimensionProperties: {
+        range: { sheetId: tabId, dimension: 'COLUMNS', startIndex: 15, endIndex: SHEET_HEADERS.length },
+        properties: { pixelSize: 90 },
+        fields: 'pixelSize'
+      }
+    },
+    // Bold all header text just in case repeat missed some
+    {
+      repeatCell: {
+        range: { sheetId: tabId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: SHEET_HEADERS.length },
+        cell: { userEnteredFormat: { textFormat: { bold: true } } },
+        fields: 'userEnteredFormat.textFormat.bold'
+      }
+    },
+    ...condRules
+  ];
+
+  await sheetsReq('POST', ':batchUpdate', { requests });
+  console.log('Sheet created & formatted:', sheetId);
+}
+
+// ── Load all leads from Sheet → leads[] ──────────────────
+async function loadFromSheets() {
+  if (!sheetsToken || !sheetId) return false;
+  updateSavePill('syncing');
+  try {
+    const data = await sheetsReq('GET', `/values/${SHEET_TAB}!A2:${LAST_COL}`);
+    const rows = data.values || [];
+    leads = rows
+      .map((row, i) => rowToLead(row, i + 2))
+      .filter(l => l.fname || l.email || l.company);
+    localStorage.setItem(LS_LEADS, JSON.stringify(leads));
+    updateSavePill();
+    return true;
+  } catch(e) {
+    console.warn('loadFromSheets failed:', e);
+    updateSavePill('error');
+    return false;
+  }
+}
+
+// ── Write all leads to Sheet (full overwrite) ─────────────
+async function syncAllToSheet() {
+  if (!sheetsToken || !sheetId) return;
+  updateSavePill('syncing');
+  try {
+    // Clear all data rows
+    await sheetsReq('POST', `/values/${SHEET_TAB}!A2:${LAST_COL}:clear`, {});
+    if (leads.length > 0) {
+      const values = leads.map((l, i) => { l._row = i + 2; return leadToRow(l); });
+      await sheetsReq('PUT',
+        `/values/${SHEET_TAB}!A2:${LAST_COL}?valueInputOption=RAW`,
+        { values }
+      );
+    }
+    updateSavePill();
+  } catch(e) {
+    console.warn('syncAllToSheet failed:', e);
+    updateSavePill('error');
+  }
+}
+
+// ── Debounced sync (called by saveData) ───────────────────
+function debouncedSheetSync() {
+  if (syncDebounce) clearTimeout(syncDebounce);
+  syncDebounce = setTimeout(() => syncAllToSheet(), 900);
+}
+
+// ── OAuth connect for Sheets scope ───────────────────────
+function connectSheets() {
+  const clientId = getClientId();
+  if (!clientId) {
+    alert('Enter and save your Google OAuth Client ID in the Setup Guide first.');
+    show('setup', document.querySelector('[onclick="show(\'setup\',this)"]'));
+    return;
+  }
+  if (typeof google === 'undefined' || !google.accounts) {
+    alert('Google Sign-In library not loaded yet. Wait a moment and try again.');
+    return;
+  }
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    callback: async (response) => {
+      if (response.error) { alert('Sheets connection failed: ' + response.error); return; }
+      sheetsToken = response.access_token;
+      updateSheetsUI(true);
+
+      // If no Sheet ID yet, create a new sheet
+      if (!sheetId) {
+        try {
+          await createAndFormatSheet();
+          alert('✓ Google Sheet created and connected!\n\nYou can find it in your Google Drive: "Prestige PEO — Outreach CRM"');
+        } catch(e) {
+          alert('Sheet creation failed: ' + e.message);
+          updateSavePill('error');
+          return;
+        }
+      }
+
+      // Load from Sheet or push local data up if Sheet is empty
+      const loaded = await loadFromSheets();
+      if (loaded && leads.length === 0) {
+        const localRaw = localStorage.getItem(LS_LEADS);
+        if (localRaw) {
+          const localLeads = JSON.parse(localRaw);
+          if (localLeads.length > 0) {
+            leads = localLeads;
+            await syncAllToSheet();
+            alert(`✓ Connected! ${leads.length} local leads pushed to the Sheet.`);
+          } else {
+            alert('✓ Google Sheets connected. Import your leads to get started.');
+          }
+        }
+      } else if (loaded) {
+        alert(`✓ Sheets connected! ${leads.length} leads loaded from the Sheet.`);
+      }
+      render();
+    }
+  });
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function disconnectSheets() {
+  sheetsToken = null;
+  updateSheetsUI(false);
+  updateSavePill();
+}
+
+function updateSheetsUI(connected) {
+  const btn   = document.getElementById('sheets-connect-btn');
+  const dot   = document.getElementById('sheets-dot');
+  const disc  = document.getElementById('sheets-disconnect-btn');
+  const status = document.getElementById('sheets-setup-status');
+  const shortId = sheetId ? sheetId.slice(0,12) + '…' : 'none';
+  if (btn) {
+    btn.textContent = connected ? '📊 Sheet Connected' : '📊 Connect Sheets';
+    btn.classList.toggle('disconnected', !connected);
+  }
+  if (dot) {
+    dot.textContent  = connected ? '● Sheet synced' : '○ Sheet offline';
+    dot.className    = 'gmail-dot ' + (connected ? 'on' : 'off');
+  }
+  if (disc)   disc.style.display   = connected ? 'inline-flex' : 'none';
+  if (status) {
+    status.textContent  = connected ? `✅ Connected · ID: ${shortId}` : 'Not connected';
+    status.style.color  = connected ? 'var(--green)' : 'var(--text3)';
+  }
+}
+
+// ════════════════════════════════════════════════
 // LOCALSTORAGE — AUTO-SAVE
 // ════════════════════════════════════════════════
 const LS_LEADS   = 'peo_crm_leads_v5';
@@ -1169,7 +1573,12 @@ function saveData() {
   try {
     localStorage.setItem(LS_LEADS,   JSON.stringify(leads));
     localStorage.setItem(LS_BATCHES, JSON.stringify(batchHistory));
-    updateSavePill();
+    if (sheetsToken && sheetId) {
+      updateSavePill('syncing');
+      debouncedSheetSync();
+    } else {
+      updateSavePill();
+    }
   } catch(e) {
     console.warn('localStorage save failed:', e);
   }
@@ -1198,20 +1607,41 @@ function loadData() {
       seedBatchesFromImport();
       saveData();
     }
+    // Restore Sheet ID
+    const savedSheetId = localStorage.getItem(LS_SHEET_ID);
+    if (savedSheetId) {
+      sheetId = savedSheetId;
+      const el = document.getElementById('sheet-id-input');
+      if (el) el.value = sheetId;
+    }
   } catch(e) {
     console.warn('localStorage load failed:', e);
   }
 }
 
-function updateSavePill() {
+function updateSavePill(state) {
   const pill = document.getElementById('save-pill');
   if (!pill) return;
+  if (state === 'syncing') {
+    pill.textContent = '⟳ Syncing…';
+    pill.className = 'save-pill saving';
+    return;
+  }
+  if (state === 'error') {
+    pill.textContent = '⚠ Sync error';
+    pill.className = 'save-pill saving';
+    return;
+  }
   if (!leads.length) {
     pill.textContent = 'No data';
     pill.className = 'save-pill empty';
     return;
   }
-  pill.textContent = `✓ Saved · ${leads.length.toLocaleString()} leads`;
+  if (sheetsToken && sheetId) {
+    pill.textContent = `✓ Saved to Sheet · ${leads.length.toLocaleString()} leads`;
+  } else {
+    pill.textContent = `✓ Local · ${leads.length.toLocaleString()} leads`;
+  }
   pill.className = 'save-pill';
 }
 
@@ -1731,6 +2161,7 @@ function importLeads() {
   seedBatchesFromImport();
 
   closeModals(); render(); saveData();
+  if (sheetsToken && sheetId) syncAllToSheet();
   alert(`✓ Imported ${parsed.length.toLocaleString()} lead${parsed.length===1?'':'s'} successfully!`);
 }
 
@@ -2356,6 +2787,7 @@ render();
 updateSavePill();
 loadGmailConfig();    // load saved Client ID + check for OAuth redirect token in URL hash
 updateGmailUI();      // set initial connect button state
+updateSheetsUI(false); // initialise Sheets button states
 </script>
 </body>
 </html>
